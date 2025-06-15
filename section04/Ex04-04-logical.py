@@ -21,6 +21,15 @@ print(f'not False: {not False}')
 print(f'not a: {not a}')
 print(f'not b: {not b}')
 
+print(f'bool(10): {bool(10)}')
+print(f'bool(0): {bool(0)}')
+
+
+
+
+
+
+
 
 
 
