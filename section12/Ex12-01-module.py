@@ -15,3 +15,18 @@ import 모듈명
     보통 외부에서 설치해서 사용한다
 
 """
+import converter
+
+miles = converter.kilometer_to_miles(150)
+print(f'150km = {miles}miles')
+
+pound = converter.gram_to_pound(1000)
+print(f'1000g = {pound}pounds')
+
+
+
+
+
+
+
+
