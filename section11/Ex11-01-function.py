@@ -12,7 +12,7 @@ def 함수이름(매개변수):
     return 반환값
 
 """
-# welcome() 함수 정의
+# welcome() 함수 정의 - 실행하고 끝나는 함수
 def welcome():
     print('Hello, Python')
     print('Nice to meet you')
