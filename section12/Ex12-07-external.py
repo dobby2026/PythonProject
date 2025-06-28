@@ -1,5 +1,5 @@
 """
-파일명: Ex12-7-external.py
+파일명: Ex12-07-external.py
 
 pip - 패키지 관리 도구
     PyPI(Python Package Index)에서 패키지를 다운로드 한다
