@@ -224,8 +224,8 @@ class Game:
         y = self.player.y + math.sin(angle) * distance
         
         # 맵 경계 안에 위치하도록 조정
-        x = max(50, min(MAP_WIDTH - 50), x)
-        y = max(50, min(MAP_HEIGHT - 50), y)
+        x = max(50, min(MAP_WIDTH - 50, x))
+        y = max(50, min(MAP_HEIGHT - 50, y))
 
         # 생성된 위치에서 새 적 추가
         self.enemies.append(EvilSpirit(x, y))
@@ -305,16 +305,46 @@ class Game:
         self.screen.fill(GRAY)
 
         # 격자 그리기(맵 크기 확인용)
+        grid_size = 100
+        start_x = int(self.camera.x // grid_size) * grid_size
+        start_y = int(self.camera.y // grid_size) * grid_size
 
+        # 세로선
+        for x in range(start_x, start_x + WINDOW_WIDTH + grid_size, grid_size):
+            screen_x, _ = self.camera.apply(x, 0)
+            if 0 <= screen_x <= WINDOW_WIDTH:
+                pygame.draw.line(self.screen, (70, 70, 70), (screen_x,0),
+                                 (screen_x, WINDOW_HEIGHT))
+
+        # 가로선
+        for y in range(start_y, start_y + WINDOW_HEIGHT + grid_size):
+            _, screen_y = self.camera.apply(0, y)
+            if 0 <= screen_y <= WINDOW_HEIGHT:
+                pygame.draw.line(self.screen, (70, 70, 70), (0, screen_y),
+                                 (WINDOW_WIDTH, screen_y))
+
+        # 맵 경계 표시
+        map_corners = [(0, 0), (MAP_WIDTH, 0), (MAP_WIDTH, MAP_HEIGHT), (0, MAP_HEIGHT)]
+        screen_coners = [self.camera.apply(corner[0], corner[1]) for corner in map_corners]
+        for i in range(len(screen_coners)):
+            start = screen_coners[i]
+            end = screen_coners[(i + 1) % len(screen_coners)]
+            pygame.draw.line(self.screen, WHITE, start, end, 3)
 
         # 게임이 진행 중일 때만 게임 객체들 그릭
         if not self.game_over:
             # 모든 적들 그리기
             for enemy in self.enemies:
-                enemy.draw(self.screen)
+                enemy.draw(self.screen, self.camera)
 
         # 플레이어 캐릭터 화면에 그리기
-        self.player.draw(self.screen)
+        self.player.draw(self.screen, self.camera)
+
+        # 플레이어 위치 표시(UI)
+        font = pygame.font.Font(None, 36)
+        pos_text = font.render(f'위치: ({int(self.player.x)}, {int(self.player.y)})',
+                               True, WHITE)
+        self.screen.blit(pos_text, (10, 10))
 
         # 게임 오버 화면 표시
         if self.game_over:
