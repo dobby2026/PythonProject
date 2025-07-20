@@ -9,8 +9,6 @@ pip install pygame
 import pygame
 import sys
 
-from pygame.examples.go_over_there import running
-
 pygame.init()
 
 # 게임 기본 설정
@@ -24,6 +22,7 @@ WHITE = (255, 255, 255)
 GOLD = (255, 215, 0)
 DARK_BLUE = (25, 25, 112)
 GRAY = (50, 50, 50)
+
 
 # ======================================================
 # 플레이어 클래스 (저승사자)
@@ -49,7 +48,7 @@ class GrimReaper:
             dy -= self.speed * dt
         if keys[pygame.K_DOWN] or keys[pygame.K_s]:
             dy += self.speed * dt
-        
+
         # 대각선 이동 시 속도 조정
         if dx != 0 and dy != 0:
             dx *= 0.707
@@ -72,8 +71,9 @@ class GrimReaper:
         pygame.draw.circle(screen, BLACK, (int(self.x), int(self.y)), self.size, 2)
 
         # 눈
-        pygame.draw.circle(screen, GOLD, (int(self.x - 4), int(self.y - 2)),2)
+        pygame.draw.circle(screen, GOLD, (int(self.x - 4), int(self.y - 2)), 2)
         pygame.draw.circle(screen, WHITE, (int(self.x + 4), int(self.y - 2)), 2)
+
 
 # ======================================================
 # 게임 메인 클래스
@@ -94,16 +94,14 @@ class Game:
         """
         # pygame.event.get()으로 발생한 모든 이벤트를 가져와서 하나씩 처리
         for event in pygame.event.get():
-
             # 창의 x(닫기) 버튼을 클릭했을 때 발생하는 이벤트
             if event.type == pygame.QUIT:
-                return False    # 게임 종료 신호를 보냄
+                return False  # 게임 종료 신호를 보냄
             # 키보드의 키를 눌렀을 때 발생하는 이벤트 (키를 누르는 순감만)
             elif event.type == pygame.KEYDOWN:
                 # ESC 키를 눌렀는지 확인
                 if event.key == pygame.K_ESCAPE:
                     return False
-
         return True
 
     def update(self, dt):
@@ -117,7 +115,6 @@ class Game:
         # dt = 이전 프레임으로부터 경과된 시간 (초 단위)
         # keys = 현재 눌려있는 키들의 상태 (True/False 배열)
         self.player.update(dt, keys)
-
 
     def draw(self):
         """ 화면 그리기 """
@@ -135,18 +132,14 @@ class Game:
         """ 메인 게임 루프
             게임이 실행되는 동안 계속 반복되는 핵심 루프
         """
-        running = True # 게임 실생 상태를 나타내는 플래그 변수
+        running = True  # 게임 실생 상태를 나타내는 플래그 변수
 
         # 게임의 메인 루프 - 게임 종료될때 까지 무한반복
         while running:
-
             #  FPS(초당 프레임 수)를 60으로 제한하고, 이전 프레임으로부터 경과된 시간을 계산
-            dt = self.clock.tick(FPS) / 1000.0 # 밀리초를 초로 변환
-
+            dt = self.clock.tick(FPS) / 1000.0  # 밀리초를 초로 변환
             running = self.handle_events()
-
             self.update(dt)
-
             self.draw()
 
         pygame.quit()
@@ -157,19 +150,3 @@ class Game:
 if __name__ == '__main__':
     game = Game()
     game.run()
-
-
-            
-
-
-
-
-
-
-
-
-
-
-
-
-
