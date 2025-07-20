@@ -71,8 +71,8 @@ class GrimReaper:
         pygame.draw.circle(screen, BLACK, (int(self.x), int(self.y)), self.size, 2)
 
         # 눈
-        pygame.draw.circle(screen, GOLD, (int(self.x - 4), int(self.y - 2)), 2)
-        pygame.draw.circle(screen, WHITE, (int(self.x + 4), int(self.y - 2)), 2)
+        pygame.draw.circle(screen, BLACK, (int(self.x - 4), int(self.y - 2)), 2)    # 왼쪽 눈
+        pygame.draw.circle(screen, WHITE, (int(self.x + 4), int(self.y - 2)), 2)    # 오른쪽 눈
 
 
 # ======================================================
