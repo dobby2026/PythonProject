@@ -215,21 +215,17 @@ class Game:
 
         화면 바깥쪽 4방향 중 하나를 랜덤 선택해서 적을 생성
         """
-        # 0~3 중 랜덤 선택 (위, 오른쪽, 아래, 왼쪽)
-        side = random.randint(0, 3)
 
-        if side == 0:   # 위쪽에서 생성
-            x = random.randint(0, WINDOW_WIDTH)
-            y = -20
-        elif side == 1: # 오른쪽에서 생성
-            x = WINDOW_WIDTH + 20
-            y = random.randint(0, WINDOW_HEIGHT)
-        elif side == 2: # 아래쪽에서 생성
-            x = random.randint(0, WINDOW_WIDTH)
-            y = WINDOW_HEIGHT + 20  # 화면 아래쪽 밖
-        else: # 왼쪽에서 생성
-            x = -20 # 화면 왼쪽 밖
-            y = random.randint(0, WINDOW_HEIGHT)
+        # 플레이어 주변 원형 범위에서 생성
+        angle = random.uniform(0, 2 * math.pi)
+        distance = 300 + random.uniform(0, 200)
+
+        x = self.player.x + math.cos(angle) * distance
+        y = self.player.y + math.sin(angle) * distance
+        
+        # 맵 경계 안에 위치하도록 조정
+        x = max(50, min(MAP_WIDTH - 50), x)
+        y = max(50, min(MAP_HEIGHT - 50), y)
 
         # 생성된 위치에서 새 적 추가
         self.enemies.append(EvilSpirit(x, y))
@@ -274,6 +270,9 @@ class Game:
         # keys = 현재 눌려있는 키들의 상태 (True/False 배열)
         self.player.update(dt, keys)
 
+        # 카메라 업데이트 (플레이어 따라가기)
+        self.camera.update(self.player.x, self.player.y)
+
         # 적 생성 타이머 업데이트
         self.spawn_timer += dt
         
@@ -289,10 +288,14 @@ class Game:
 
             # 충돌 검사 - 플레이어와 적사이 거리 계산
             # 두 원(플레이어, 적)의 중심점 사이 거리를 구함
-            distance = math.sqrt((enemy.x - self.player.x) ** 2 + (enemy.y - self.player.y) ** 2)
+
+            distance_to_player = math.sqrt((enemy.x - self.player.x) ** 2 + (enemy.y - self.player.y) ** 2)
+            # 너무 멀리 떨어진 적 제거 (성는 최적화)
+            if distance_to_player > 800:
+                self.enemies.remove(enemy)
 
             # 거리가 두 원의 반지름 합보다 작으면 충돌
-            if distance < self.player.size + enemy.size:
+            if distance_to_player < self.player.size + enemy.size:
                 self.game_over = True
 
     def draw(self):
@@ -300,6 +303,9 @@ class Game:
 
         # 화면 전체 GRAY 색으로 채워서 이전 프레임의 잔상을 지움
         self.screen.fill(GRAY)
+
+        # 격자 그리기(맵 크기 확인용)
+
 
         # 게임이 진행 중일 때만 게임 객체들 그릭
         if not self.game_over:
