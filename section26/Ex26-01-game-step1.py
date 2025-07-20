@@ -61,8 +61,11 @@ class GrimReaper:
         self.x = max(self.size, min(WINDOW_WIDTH - self.size, self.x))
         self.y = max(self.size, min(WINDOW_HEIGHT - self.size, self.y))
 
-    def draw(self):
+    def draw(self, screen):
         """ 저승사자 그리기 """
+
+        # 본체 (파란색 원)
+        pygame.draw.circle(screen, DARK_BLUE, (int(self.x), int(self.y)), self.size)
 
 
 
