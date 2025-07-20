@@ -200,15 +200,26 @@ class Game:
                 return False  # 게임 종료 신호를 보냄
             # 키보드의 키를 눌렀을 때 발생하는 이벤트 (키를 누르는 순감만)
             elif event.type == pygame.KEYDOWN:
-                # ESC 키를 눌렀는지 확인
-                if event.key == pygame.K_ESCAPE:
-                    return False
+                if self.game_over: # 게임오버 상태일 때
+                    if event.key == pygame.K_SPACE: # 스페이스바로 재시작
+                        self.__init__() # 게임 객체를 다시 초기화 (재시작)
+                    # ESC 키를 눌렀는지 확인
+                    if event.key == pygame.K_ESCAPE:
+                        return False
+                else: # 게임 실행 중일 때
+                    if event.key == pygame.K_ESCAPE:    # ESC로 종료
+                        return False
         return True
+
 
     def update(self, dt):
         """ 게임 로직 업데이트
             캐릭터 이동, 충돌 검사, 점수 계산 등 모든 게임 계산
         """
+        # 게임 오버시에는 업데이트 중단
+        if self.game_over:
+            return
+
         # 키를 계속 누르고 있는지 실시간으로 체크
         keys = pygame.key.get_pressed()
 
@@ -217,14 +228,59 @@ class Game:
         # keys = 현재 눌려있는 키들의 상태 (True/False 배열)
         self.player.update(dt, keys)
 
+        # 적 생성 타이머 업데이트
+        self.spawn_timer += dt
+        
+        # 설정된 생성 주기가 되면 새 적 생성
+        if self.spawn_timer >= 1.0 / self.spawn_rate:
+            self.spawn_enemy() # 새 적 생성
+            self.spawn_timer = 0 # 타이머 리셋
+
+        # 모든 적들 업데이트 및 충돌 감지
+        for enemy in self.enemies:
+            # 각 적의 AI 업데이트 (플레이어 추적)
+            enemy.update(dt, self.player)
+
+            # 충돌 검사 - 플레이어와 적사이 거리 계산
+            # 두 원(플레이어, 적)의 중심점 사이 거리를 구함
+            distance = math.sqrt((enemy.x - self.player.x) ** 2 + (enemy.y - self.player.y) ** 2)
+
+            # 거리가 두 원의 반지름 합보다 작으면 충돌
+            if distance < self.player.size + enemy.size:
+                self.game_over = True
+
     def draw(self):
         """ 화면 그리기 """
 
         # 화면 전체 GRAY 색으로 채워서 이전 프레임의 잔상을 지움
         self.screen.fill(GRAY)
 
+        # 게임이 진행 중일 때만 게임 객체들 그릭
+        if not self.game_over:
+            # 모든 적들 그리기
+            for enemy in self.enemies:
+                enemy.draw(self.screen)
+
         # 플레이어 캐릭터 화면에 그리기
         self.player.draw(self.screen)
+
+        # 게임 오버 화면 표시
+        if self.game_over:
+            # 큰 폰트로 "GAME OVER" 텍스트 생성
+            font = pygame.font.Font(None, 72)
+            game_over_text = font.render("GAME OVER", True, RED) # 빨간색 텍스트
+
+            # 작은 폰트로 재시작 안내 텍스트 생성
+            restart_text = (pygame.font.Font(None, 36)
+                            .render("Press SPACE to restart", True, WHITE))
+
+            # 텍스트를 화면 중앙에 배치하기 위한 위치 계산
+            go_rect = game_over_text.get_rect(center=(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2 - 50))
+            re_rect = restart_text.get_rect(center=(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2 + 20))
+
+            # 텍스트를 화면에 그리기
+            self.screen.blit(game_over_text, go_rect)
+            self.screen.blit(restart_text, re_rect)
 
         # 지금까지 그린 것들 실제 화면에 표시
         pygame.display.flip()
