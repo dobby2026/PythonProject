@@ -1,7 +1,7 @@
 """
 Ex26-02-game-step2.py
 
-2단계: 적 추가 + 충돌 감지
+3단계: 카메라 시스템
 
 pip install pygame
 """
@@ -17,6 +17,9 @@ pygame.init()
 # 게임 기본 설정
 WINDOW_WIDTH = 1000
 WINDOW_HEIGHT = 700
+# 큰 맵 크기
+MAP_WIDTH = 4000
+MAP_HEIGHT = 3000
 FPS = 60
 
 # 색상 정의
@@ -66,20 +69,24 @@ class GrimReaper:
         self.y += dy
 
         # 화면 경계 제한
-        self.x = max(self.size, min(WINDOW_WIDTH - self.size, self.x))
-        self.y = max(self.size, min(WINDOW_HEIGHT - self.size, self.y))
+        self.x = max(self.size, min(MAP_WIDTH - self.size, self.x))
+        self.y = max(self.size, min(MAP_HEIGHT - self.size, self.y))
 
-    def draw(self, screen):
+    def draw(self, screen, camera):
         """ 저승사자 그리기 """
 
+        # 월드 좌표를 화면 좌표로 변환
+        screen_x, screen_y = camera.apply(self.x, self.y)
+
         # 본체 (파란색 원)
-        pygame.draw.circle(screen, DARK_BLUE, (int(self.x), int(self.y)), self.size)
-        pygame.draw.circle(screen, GOLD, (int(self.x), int(self.y)), self.size - 3)
-        pygame.draw.circle(screen, BLACK, (int(self.x), int(self.y)), self.size, 2)
+        pygame.draw.circle(screen, DARK_BLUE, (int(screen_x), int(screen_y)), self.size)
+        pygame.draw.circle(screen, GOLD, (int(screen_x), int(screen_y)), self.size - 3)
+        pygame.draw.circle(screen, BLACK, (int(screen_x), int(screen_y)), self.size, 2)
 
         # 눈
-        pygame.draw.circle(screen, BLACK, (int(self.x - 4), int(self.y - 2)), 2)    # 왼쪽 눈
-        pygame.draw.circle(screen, WHITE, (int(self.x + 4), int(self.y - 2)), 2)    # 오른쪽 눈
+        pygame.draw.circle(screen, BLACK, (int(screen_x - 4), int(screen_y - 2)), 2)  # 왼쪽 눈
+        pygame.draw.circle(screen, WHITE, (int(screen_x + 4), int(screen_y - 2)), 2)
+        # 오른쪽 눈
 
 
 # ======================================================
@@ -128,20 +135,56 @@ class EvilSpirit:
             self.y += dy * self.speed * dt
 
 
-    def draw(self, screen):
+    def draw(self, screen, camera):
         """ 악귀를 화면에 그리기 """
 
         # 죽은 적은 그리지 않음
         if not self.alive:
             return
         
-        # 빨간색 원으로 적 본체 그리기
-        pygame.draw.circle(screen, RED, (int(self.x), int(self.y)), self.size)
-        pygame.draw.circle(screen, BLACK, (int(self.x), int(self.y)), self.size, 1)
+        # 월드 좌표를 화면 좌표로 변환
+        screen_x, screen_y = camera.apply(self.x, self.y)
 
-        # 적의 눈 그리기
-        pygame.draw.circle(screen, WHITE, (int(self.x - 3), int(self.y - 2)), 1)
-        pygame.draw.circle(screen, WHITE, (int(self.x + 3), int(self.y - 2)), 1)
+
+        # 화면에 보이지 않으면 그리지 않음 (성능 최적화)
+        if -20 <= screen_x <= WINDOW_WIDTH + 20 and -20 <= screen_y <= WINDOW_HEIGHT + 20:
+            # 빨간색 원으로 적 본체 그리기
+            pygame.draw.circle(screen, RED, (int(screen_x), int(screen_y)), self.size)
+            pygame.draw.circle(screen, BLACK, (int(screen_x), int(screen_y)), self.size, 1)
+
+            # 적의 눈 그리기
+            pygame.draw.circle(screen, WHITE, (int(screen_x - 3), int(screen_y - 2)), 1)
+            pygame.draw.circle(screen, WHITE, (int(screen_x + 3), int(screen_y - 2)), 1)
+
+# ======================================================
+# 카메라 클래스
+# ======================================================
+class Camera:
+    def __init__(self):
+        """ 카메라 초기화 """
+        self.x = 0  # 현재 카메라 위치 x
+        self.y = 0  # 현재 카메라 위치 y
+        self.target_x = 0 # 목표 위치 x
+        self.target_y = 0 # 목표 위치 y
+        self.smoothing = 0.1    # 부드러운 이동 (0.1 = 부드럽게, 1.0 = 즉시)
+
+    def update(self, target_x, target_y):
+        """ 타겟(플레이어)을 따라 카메라 업데이트 """
+        # 카메라가 타겟을 화면 중앙에 유지하도록 계산
+        self.target_x = target_x - WINDOW_WIDTH // 2
+        self.target_y = target_y - WINDOW_HEIGHT // 2
+
+        # 맵 경계 제한 (카메라가 맵 밖으로 나가지 않게)
+        self.target_x = max(0, min(MAP_WIDTH - WINDOW_WIDTH, self.target_x))
+        self.target_y = max(0, min(MAP_HEIGHT - WINDOW_HEIGHT, self.target_y))
+
+        # 부드러운 카메라 이동 (선형 보간)
+        self.x += (self.target_x - self.x) * self.smoothing
+        self.y += (self.target_y - self.y) * self.smoothing
+
+    def apply(self, x, y):
+        """ 월드 좌표를 화면 좌표로 변환 """
+        return (x - self.x, y - self.y)
 
 
 # ======================================================
@@ -151,11 +194,14 @@ class Game:
     def __init__(self):
         """ 게임 초기화 """
         self.screen = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
-        pygame.display.set_caption("2단계: 적 추가 + 충돌 감지")
+        pygame.display.set_caption("3단계: 카메라 시스템(큰 맵)")
         self.clock = pygame.time.Clock()
 
         # 플레이어를 화면 중앙에 생성
-        self.player = GrimReaper(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2)
+        self.player = GrimReaper(MAP_WIDTH // 2, MAP_HEIGHT // 2)
+
+        # 카메라 초기화
+        self.camera = Camera()
 
         # 적 관리 관련 변수들
         self.enemies = []   # 현재 화면에 있는 모든 적들을 저장하는 리스트
