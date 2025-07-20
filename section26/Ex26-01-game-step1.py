@@ -66,7 +66,16 @@ class GrimReaper:
 
         # 본체 (파란색 원)
         pygame.draw.circle(screen, DARK_BLUE, (int(self.x), int(self.y)), self.size)
+        pygame.draw.circle(screen, GOLD, (int(self.x), int(self.y)), self.size - 3)
+        pygame.draw.circle(screen, BLACK, (int(self.x), int(self.y)), self.size, 2)
 
+        # 눈
+        pygame.draw.circle(screen, GOLD, (int(self.x - 4), int(self.y - 2)),2)
+        pygame.draw.circle(screen, WHITE, (int(self.x + 4), int(self.y - 2)), 2)
+
+# ======================================================
+# 게임 메인 클래스
+# ======================================================
 
 
 
