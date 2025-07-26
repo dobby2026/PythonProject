@@ -1,7 +1,7 @@
 """
-Ex26-02-game-step2.py
+Ex26-04-game-step4.py
 
-3단계: 카메라 시스템
+4단계: 공격 시스템 + HP
 
 pip install pygame
 """
@@ -45,6 +45,17 @@ class GrimReaper:
         self.size = 15
         self.speed = 200
 
+        # HP 시스템 - 생존과 죽음의 개념 도입
+        self.hp = 100               # 현재 HP
+        self.max_hp = 100           # 최대 HP
+        self.attack_damage = 25     # 공격 데미지
+        self.attack_range = 80      # 공격 범위
+        self.attack_cooldown = 0    # 공격 쿨다운 타이머
+        self.attack_speed = 30      # 공격 속도
+        self.attacking = False      # 현재 공격 중인지 여부
+        self.attack_animation_timer = 0 # 공격 애니메이션 지속시간
+
+
     def update(self, dt, keys):
         """ 플레이어 업데이트 (이동처리) """
         dx = dy = 0
@@ -72,11 +83,93 @@ class GrimReaper:
         self.x = max(self.size, min(MAP_WIDTH - self.size, self.x))
         self.y = max(self.size, min(MAP_HEIGHT - self.size, self.y))
 
+        # 공격 시스템 타이머 업데이트
+
+        # 공격 쿨다운 감소(프레임 단위로 카운트다운)
+        if self.attack_cooldown > 0:
+            self.attack_cooldown -= 1
+
+        # 공격 애니메이션 타이머 감소 (초 단위)
+        if self.attack_animation_timer > 0:
+            self.attack_animation_timer -= dt # 실제 시간으로 감소
+            if self.attack_animation_timer <= 0:
+                self.attacking = False  # 애니메이션 종료
+
+    def attack(self, enemies):
+        """
+        자동 공격 시스템
+            가장 가까운 적을 공격
+
+        Args:
+            enemies (list): 모든 적들의 리스트   
+        """
+        if self.attack_cooldown <= 0:   # 쿨다운이 끝났으면 공격 가능
+            closest_enemy = None
+            closest_distance = float('inf') # 무한대로 초기화
+
+            for enemy in enemies:
+                # 피타고라스 정리로 거리 계산
+                distance = math.sqrt((enemy.x - self.x) **2 + (enemy.y - self.y) **2)
+
+                # 공격 범위 안에 있고, 현재까지 발견한 적보다 가까우면 선택
+                if distance <= self.attack_range and distance < closest_distance:
+                    closest_distance = distance
+                    closest_enemy = enemy
+
+            # 공격 실행
+            if closest_enemy:    # 공격할 수 있는 적이 있으면
+
+                # 적에게 데미지 입히기
+                closest_enemy.take_damage(self.attack_damage)
+
+                # 쿨다운 시작(다믐 공격까지 대기시간)
+                self.attack_cooldown = self.attack_speed
+                
+                #공격 애니메이션 시작
+                self.attacking = True
+                self.attack_animation_timer = 0.3 # 0.3초 동안 공격 이펙트 표시
+                
+                return True # 공격 성공
+
+        return False
+    
+    def take_damage(self, amount):
+        """데미지 받는 처리"""
+
+        self.hp -= amount
+
+        if self.hp <= 0:
+            self.hp = 0
+            return True
+        
+        return False     # 아직 살아 있음
+
+
     def draw(self, screen, camera):
         """ 저승사자 그리기 """
 
         # 월드 좌표를 화면 좌표로 변환
         screen_x, screen_y = camera.apply(self.x, self.y)
+
+        # 공격 범위 표시
+        if not self.attacking:
+            attack_surface = pygame.Surface((self.attack_range * 2, self.attack_range *2))
+            attack_surface.set_alpha(20) # 매우 연하게
+            pygame.draw.circle(attack_surface, GOLD,
+                               (self.attack_range, self.attack_range),
+                               self.attack_range)
+            screen.blit(attack_surface,
+                        (screen_x - self.attack_range, screen_y - self.attack_range))
+
+        # 공격 이펙트 (공격 중일 때)
+        if self.attacking:
+            attack_surface = pygame.Surface((self.attack_range * 2, self.attack_range * 2))
+            attack_surface.set_alpha(100)
+            pygame.draw.circle(attack_surface, GOLD,
+                               (self.attack_range, self.attack_range),
+                               self.attack_range)
+            screen.blit(attack_surface,
+                        (screen_x - self.attack_range, screen_y - self.attack_range))
 
         # 본체 (파란색 원)
         pygame.draw.circle(screen, DARK_BLUE, (int(screen_x), int(screen_y)), self.size)
@@ -85,7 +178,7 @@ class GrimReaper:
 
         # 눈
         pygame.draw.circle(screen, BLACK, (int(screen_x - 4), int(screen_y - 2)), 2)  # 왼쪽 눈
-        pygame.draw.circle(screen, WHITE, (int(screen_x + 4), int(screen_y - 2)), 2)
+        pygame.draw.circle(screen, RED, (int(screen_x + 4), int(screen_y - 2)), 2)
         # 오른쪽 눈
 
 
@@ -106,6 +199,11 @@ class EvilSpirit:
         self.size = 10
         self.speed = 60
         self.alive = True   # 생존상태
+
+        # HP 시스템
+        self.hp = 30 # 현재 HP
+
+
 
     def update(self, dt, player):
         """
