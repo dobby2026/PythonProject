@@ -482,7 +482,7 @@ class Game:
         # HP 바 배경 (빨간색)
         pygame.draw.rect(self.screen, RED, (10, 10, hp_bar_width, hp_bar_height))
         # 현재 HP (초록색)
-        pygame.draw.rect(self.screen, GREEN, (10, 10, hp_bar_width, hp_bar_height))
+        pygame.draw.rect(self.screen, GREEN, (10, 10, hp_bar_width * hp_percentage, hp_bar_height))
         # HP 바 테두리
         pygame.draw.rect(self.screen, WHITE,
                          (10, 10, hp_bar_width, hp_bar_height), 2)
