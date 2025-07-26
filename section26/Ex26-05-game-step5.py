@@ -560,15 +560,23 @@ class Game:
                          (10, 10, hp_bar_width, hp_bar_height), 2)
 
         # 플레이어 위치 표시(UI)
-        font = pygame.font.Font(None, 36)
-        pos_text = font.render(f'위치: ({int(self.player.x)}, {int(self.player.y)})',
+        hp_text = self.font.render(f'체력: {self.player.hp} / {self.player.max_hp}',
+                                   True, WHITE)
+        time_text = self.font.render(f'시간: {int(self.game_time)}초',
+                                   True, WHITE)
+        score_text = self.font.render(f'점수: {int(self.score)}',
+                                     True, WHITE)
+        enemy_count_text = self.font.render(f'악귀: {len(self.enemies)}', True, WHITE)
+        pos_text = self.font.render(f'위치: ({int(self.player.x)}, {int(self.player.y)})',
                                True, WHITE)
-        self.screen.blit(pos_text, (10, 40))
-        hp_text = font.render(f'HP: {self.player.hp} / {self.player.max_hp}',
-                              True, WHITE)
-        self.screen.blit(hp_text, (10, 80))
-        enemy_count = font.render(f'Enemies: {len(self.enemies)}', True, WHITE)
-        self.screen.blit(enemy_count, (10, 120))
+
+        self.screen.blit(hp_text, (10, 40))
+        self.screen.blit(time_text, (10, 70))
+        self.screen.blit(score_text, (10, 100))
+        self.screen.blit(enemy_count_text, (10, 130))
+        self.screen.blit(pos_text, (10, 160))
+
+
 
         # 게임 오버 화면 표시
         if self.game_over:
