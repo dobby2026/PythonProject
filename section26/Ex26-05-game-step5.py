@@ -13,6 +13,7 @@ import random
 import platform  # 운영체제 감지용
 import os   # 파일 존재 확인용
 
+from PIL.ImageChops import overlay
 
 pygame.init()
 
@@ -576,24 +577,66 @@ class Game:
         self.screen.blit(enemy_count_text, (10, 130))
         self.screen.blit(pos_text, (10, 160))
 
+        # 미니맵 (우상단)
+        minimap_size = 150
+        minimap_x = WINDOW_WIDTH - minimap_size - 10
+        minimap_y = 10
+
+        # 미니맵 배경
+        pygame.draw.rect(self.screen, (30, 30, 30),
+                         (minimap_x, minimap_y, minimap_size, minimap_size))
+        pygame.draw.rect(self.screen, WHITE,
+                         (minimap_x, minimap_y, minimap_size, minimap_size), 2)
+
+        # 플레이어 위치 (미니맵에서)
+        player_minimap_x = minimap_x + (self.player.x / MAP_WIDTH) * minimap_size
+        player_minimap_y = minimap_y + (self.player.y / MAP_HEIGHT) * minimap_size
+        pygame.draw.circle(self.screen, GOLD,
+                           (int(player_minimap_x), int(player_minimap_y)), 3)
+
+        # 적들 위치 (미니맵에서)
+        for enemy in self.enemies:
+            enemy_minimap_x = minimap_x + (enemy.x / MAP_WIDTH) * minimap_size
+            enemy_minimap_y = minimap_y + (enemy.y / MAP_HEIGHT) * minimap_size
+            pygame.draw.circle(self.screen, RED,
+                               (int(enemy_minimap_x), int(enemy_minimap_y)), 1)
+
+        # 조작법 안내 (화면 하단)
+        control_text = self.font.render("WASD/방향키: 이동 | ESC: 종료", True, WHITE)
+        self.screen.blit(control_text, (10, WINDOW_HEIGHT - 30))
 
 
         # 게임 오버 화면 표시
         if self.game_over:
+            
+            # 반투명 오버레이
+            overlay = pygame.Surface((WINDOW_WIDTH, WINDOW_HEIGHT))
+            overlay.set_alpha(128)
+            overlay.fill(BLACK)
+            self.screen.blit(overlay, (0, 0))
+
+            
             # 큰 폰트로 "GAME OVER" 텍스트 생성
             font = pygame.font.Font(None, 72)
             game_over_text = font.render("GAME OVER", True, RED) # 빨간색 텍스트
+            final_score_text = self.font.render(f'최종 점수: {self.score}', True, WHITE)
+            final_time_text = self.font.render(f'생존 시간: {int(self.game_time)}초',
+                                               True, WHITE)
 
             # 작은 폰트로 재시작 안내 텍스트 생성
             restart_text = (pygame.font.Font(None, 36)
                             .render("Press SPACE to restart", True, WHITE))
 
             # 텍스트를 화면 중앙에 배치하기 위한 위치 계산
-            go_rect = game_over_text.get_rect(center=(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2 - 50))
-            re_rect = restart_text.get_rect(center=(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2 + 20))
+            go_rect = game_over_text.get_rect(center=(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2 - 80))
+            fs_rect = final_score_text.get_rect(center=(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2 - 40))
+            ft_rect = final_time_text.get_rect(center=(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2))
+            re_rect = restart_text.get_rect(center=(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2 + 40))
 
             # 텍스트를 화면에 그리기
             self.screen.blit(game_over_text, go_rect)
+            self.screen.blit(final_score_text, fs_rect)
+            self.screen.blit(final_time_text, ft_rect)
             self.screen.blit(restart_text, re_rect)
 
         # 지금까지 그린 것들 실제 화면에 표시
