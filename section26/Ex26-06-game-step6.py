@@ -395,7 +395,7 @@ class GrimReaper:
         # 기존 속성들
         self.x = x
         self.y = y
-        self.size = 15
+        self.size = 30
         self.speed = 200
         self.hp = 100
         self.max_hp = 100
