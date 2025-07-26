@@ -317,7 +317,7 @@ class Game:
                                  (screen_x, WINDOW_HEIGHT))
 
         # 가로선
-        for y in range(start_y, start_y + WINDOW_HEIGHT + grid_size):
+        for y in range(start_y, start_y + WINDOW_HEIGHT + grid_size, grid_size):
             _, screen_y = self.camera.apply(0, y)
             if 0 <= screen_y <= WINDOW_HEIGHT:
                 pygame.draw.line(self.screen, (70, 70, 70), (0, screen_y),
