@@ -29,6 +29,37 @@ RED = (220, 20, 60)
 GOLD = (255, 215, 0)
 DARK_BLUE = (25, 25, 112)
 GRAY = (50, 50, 50)
+GREEN = (0, 255, 0)
+
+# ======================================================
+# 카메라 클래스
+# ======================================================
+class Camera:
+    def __init__(self):
+        """ 카메라 초기화 """
+        self.x = 0  # 현재 카메라 위치 x
+        self.y = 0  # 현재 카메라 위치 y
+        self.target_x = 0 # 목표 위치 x
+        self.target_y = 0 # 목표 위치 y
+        self.smoothing = 0.1    # 부드러운 이동 (0.1 = 부드럽게, 1.0 = 즉시)
+
+    def update(self, target_x, target_y):
+        """ 타겟(플레이어)을 따라 카메라 업데이트 """
+        # 카메라가 타겟을 화면 중앙에 유지하도록 계산
+        self.target_x = target_x - WINDOW_WIDTH // 2
+        self.target_y = target_y - WINDOW_HEIGHT // 2
+
+        # 맵 경계 제한 (카메라가 맵 밖으로 나가지 않게)
+        self.target_x = max(0, min(MAP_WIDTH - WINDOW_WIDTH, self.target_x))
+        self.target_y = max(0, min(MAP_HEIGHT - WINDOW_HEIGHT, self.target_y))
+
+        # 부드러운 카메라 이동 (선형 보간)
+        self.x += (self.target_x - self.x) * self.smoothing
+        self.y += (self.target_y - self.y) * self.smoothing
+
+    def apply(self, x, y):
+        """ 월드 좌표를 화면 좌표로 변환 """
+        return (x - self.x, y - self.y)
 
 
 # ======================================================
@@ -201,9 +232,9 @@ class EvilSpirit:
         self.alive = True   # 생존상태
 
         # HP 시스템
-        self.hp = 30 # 현재 HP
-
-
+        self.hp = 30        # 현재 HP
+        self.max_hp = 30    # 최대 HP
+        self.damage = 10    # 플레이어에게 주는 데미지
 
     def update(self, dt, player):
         """
@@ -232,6 +263,13 @@ class EvilSpirit:
             self.x += dx * self.speed * dt
             self.y += dy * self.speed * dt
 
+    def take_damage(self, amount):
+        """ 데미지 받는 처리 """
+        self.hp -= amount
+        if self.hp <= 0:
+            self.alive = False
+            return True
+        return False
 
     def draw(self, screen, camera):
         """ 악귀를 화면에 그리기 """
@@ -245,7 +283,7 @@ class EvilSpirit:
 
 
         # 화면에 보이지 않으면 그리지 않음 (성능 최적화)
-        if -20 <= screen_x <= WINDOW_WIDTH + 20 and -20 <= screen_y <= WINDOW_HEIGHT + 20:
+        if -30 <= screen_x <= WINDOW_WIDTH + 30 and -30 <= screen_y <= WINDOW_HEIGHT + 30:
             # 빨간색 원으로 적 본체 그리기
             pygame.draw.circle(screen, RED, (int(screen_x), int(screen_y)), self.size)
             pygame.draw.circle(screen, BLACK, (int(screen_x), int(screen_y)), self.size, 1)
@@ -254,35 +292,25 @@ class EvilSpirit:
             pygame.draw.circle(screen, WHITE, (int(screen_x - 3), int(screen_y - 2)), 1)
             pygame.draw.circle(screen, WHITE, (int(screen_x + 3), int(screen_y - 2)), 1)
 
-# ======================================================
-# 카메라 클래스
-# ======================================================
-class Camera:
-    def __init__(self):
-        """ 카메라 초기화 """
-        self.x = 0  # 현재 카메라 위치 x
-        self.y = 0  # 현재 카메라 위치 y
-        self.target_x = 0 # 목표 위치 x
-        self.target_y = 0 # 목표 위치 y
-        self.smoothing = 0.1    # 부드러운 이동 (0.1 = 부드럽게, 1.0 = 즉시)
+            # HP 바 그리기
+            bar_width = self.size * 2
+            bar_height = 3
+            bar_x = screen_x - bar_width // 2
+            bar_y = screen_y - self.size - 8
 
-    def update(self, target_x, target_y):
-        """ 타겟(플레이어)을 따라 카메라 업데이트 """
-        # 카메라가 타겟을 화면 중앙에 유지하도록 계산
-        self.target_x = target_x - WINDOW_WIDTH // 2
-        self.target_y = target_y - WINDOW_HEIGHT // 2
+            # HP 바 배경(빨간색)
+            pygame.draw.rect(screen, RED, (bar_x, bar_y, bar_width, bar_height))
 
-        # 맵 경계 제한 (카메라가 맵 밖으로 나가지 않게)
-        self.target_x = max(0, min(MAP_WIDTH - WINDOW_WIDTH, self.target_x))
-        self.target_y = max(0, min(MAP_HEIGHT - WINDOW_HEIGHT, self.target_y))
+            # 현재 HP(초록색)
+            current_hp_width = (self.hp / self.max_hp) * bar_width
+            pygame.draw.rect(screen, GREEN,
+                             (bar_x, bar_y, current_hp_width,
+                                             bar_height))
+            # HP바 테두리
+            pygame.draw.rect(screen, WHITE,
+                             (bar_x, bar_y, bar_width, bar_height), 1)
 
-        # 부드러운 카메라 이동 (선형 보간)
-        self.x += (self.target_x - self.x) * self.smoothing
-        self.y += (self.target_y - self.y) * self.smoothing
 
-    def apply(self, x, y):
-        """ 월드 좌표를 화면 좌표로 변환 """
-        return (x - self.x, y - self.y)
 
 
 # ======================================================
@@ -304,7 +332,7 @@ class Game:
         # 적 관리 관련 변수들
         self.enemies = []   # 현재 화면에 있는 모든 적들을 저장하는 리스트
         self.spawn_timer = 0    # 적 생성 타이머 (초 단위)
-        self.spawn_rate = 1.0   # 적 생성 빈도 (1.0 = 1초마다 1마리)
+        self.spawn_rate = 1.5   # 적 생성 빈도 (1.0 = 1초마다 1마리)
         self.game_over = False  # 게임 오버 상태 플래그
 
     def spawn_enemy(self):
@@ -389,12 +417,21 @@ class Game:
 
             distance_to_player = math.sqrt((enemy.x - self.player.x) ** 2 + (enemy.y - self.player.y) ** 2)
             # 너무 멀리 떨어진 적 제거 (성는 최적화)
-            if distance_to_player > 800:
+            if distance_to_player > 1000:
                 self.enemies.remove(enemy)
 
             # 거리가 두 원의 반지름 합보다 작으면 충돌
             if distance_to_player < self.player.size + enemy.size:
-                self.game_over = True
+                if self.player.take_damage(enemy.damage):
+                    self.game_over = True # 플레이어 HP가 0이 되면 게임오버
+                enemy.alive = False
+
+            if not enemy.alive:
+                self.enemies.remove(enemy)
+
+        # 플레이어 자동공격
+        self.player.attack(self.enemies)
+
 
     def draw(self):
         """ 화면 그리기 """
@@ -434,15 +471,32 @@ class Game:
             # 모든 적들 그리기
             for enemy in self.enemies:
                 enemy.draw(self.screen, self.camera)
+            # 플레이어 캐릭터 화면에 그리기
+            self.player.draw(self.screen, self.camera)
 
-        # 플레이어 캐릭터 화면에 그리기
-        self.player.draw(self.screen, self.camera)
+        # 플레이어 HP 바 UI
+        hp_bar_width = 200
+        hp_bar_height = 20
+        hp_percentage = self.player.hp / self.player.max_hp
+
+        # HP 바 배경 (빨간색)
+        pygame.draw.rect(self.screen, RED, (10, 10, hp_bar_width, hp_bar_height))
+        # 현재 HP (초록색)
+        pygame.draw.rect(self.screen, GREEN, (10, 10, hp_bar_width, hp_bar_height))
+        # HP 바 테두리
+        pygame.draw.rect(self.screen, WHITE,
+                         (10, 10, hp_bar_width, hp_bar_height), 2)
 
         # 플레이어 위치 표시(UI)
         font = pygame.font.Font(None, 36)
-        pos_text = font.render(f'위치: ({int(self.player.x)}, {int(self.player.y)})',
+        pos_text = font.render(f'POS: ({int(self.player.x)}, {int(self.player.y)})',
                                True, WHITE)
-        self.screen.blit(pos_text, (10, 10))
+        self.screen.blit(pos_text, (10, 40))
+        hp_text = font.render(f'HP: {self.player.hp} / {self.player.max_hp}',
+                              True, WHITE)
+        self.screen.blit(hp_text, (10, 80))
+        enemy_count = font.render(f'Enemies: {len(self.enemies)}', True, WHITE)
+        self.screen.blit(enemy_count, (10, 120))
 
         # 게임 오버 화면 표시
         if self.game_over:
